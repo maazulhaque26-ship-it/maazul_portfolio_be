@@ -9,6 +9,11 @@
 const Profile = require('../models/Profile');
 const { uploadToCloudinary } = require('../utils/cloudinary');
 
+const safeParse = (data) => {
+  if (typeof data !== 'string') return data;
+  try { return JSON.parse(data); } catch { return undefined; }
+};
+
 exports.getProfile = async (req, res) => {
   try {
     const profile = await Profile.findOne();
@@ -20,26 +25,31 @@ exports.getProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    // FormData sends nested objects as JSON strings — parse them
-    const hero     = typeof req.body.hero     === 'string' ? JSON.parse(req.body.hero)     : req.body.hero;
-    const about    = typeof req.body.about    === 'string' ? JSON.parse(req.body.about)    : req.body.about;
-    const contact  = typeof req.body.contact  === 'string' ? JSON.parse(req.body.contact)  : req.body.contact;
-    const pricing  = typeof req.body.pricing  === 'string' ? JSON.parse(req.body.pricing)  : req.body.pricing;
-    const timeline = typeof req.body.timeline === 'string' ? JSON.parse(req.body.timeline) : req.body.timeline;
+    // Safely parse FormData JSON strings without crashing
+    const hero     = safeParse(req.body.hero)     || req.body.hero;
+    const about    = safeParse(req.body.about)    || req.body.about;
+    const contact  = safeParse(req.body.contact)  || req.body.contact;
+    const pricing  = safeParse(req.body.pricing)  || req.body.pricing;
+    const timeline = safeParse(req.body.timeline) || req.body.timeline;
 
     // If a new avatar was uploaded, stream it to Cloudinary
     if (req.file && hero) {
-      const result = await uploadToCloudinary(req.file.buffer, 'portfolio/avatars');
-      hero.avatarUrl = result.secure_url;
+      try {
+        const result = await uploadToCloudinary(req.file.buffer, 'portfolio/avatars');
+        hero.avatarUrl = result.secure_url;
+      } catch (uploadObjError) {
+        console.error('Cloudinary upload Error:', uploadObjError.message);
+        return res.status(502).json({ message: 'Image upload failed. Please verify Cloudinary credentials.' });
+      }
     }
 
     // Only include fields that were actually sent
     const updateData = {};
-    if (hero)     updateData.hero     = hero;
-    if (about)    updateData.about    = about;
-    if (contact)  updateData.contact  = contact;
-    if (pricing)  updateData.pricing  = pricing;
-    if (timeline) updateData.timeline = timeline;
+    if (hero && typeof hero === 'object')         updateData.hero     = hero;
+    if (about && typeof about === 'object')        updateData.about    = about;
+    if (contact && typeof contact === 'object')      updateData.contact  = contact;
+    if (pricing && Array.isArray(pricing))      updateData.pricing  = pricing;
+    if (timeline && Array.isArray(timeline))     updateData.timeline = timeline;
 
     const updatedProfile = await Profile.findOneAndUpdate(
       {},
