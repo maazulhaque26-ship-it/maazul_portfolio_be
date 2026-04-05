@@ -30,6 +30,14 @@ const profileSchema = new mongoose.Schema({
       subtitle: { type: String, default: "" },
     }
   ],
+  achievements: [
+    {
+      category: { type: String, enum: ['Achievement', 'Participation'], default: 'Achievement' },
+      period:   { type: String, default: "" },
+      title:    { type: String, default: "" },
+      subtitle: { type: String, default: "" },
+    }
+  ],
   contact: {
     phone:   { type: String, default: "" },
     email:   { type: String, default: "" },
