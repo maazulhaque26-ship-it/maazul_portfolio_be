@@ -31,6 +31,7 @@ exports.updateProfile = async (req, res) => {
     const contact  = safeParse(req.body.contact)  || req.body.contact;
     const pricing  = safeParse(req.body.pricing)  || req.body.pricing;
     const timeline = safeParse(req.body.timeline) || req.body.timeline;
+    const achievements = safeParse(req.body.achievements) || req.body.achievements;
 
     // If a new avatar was uploaded, stream it to Cloudinary
     if (req.file && hero) {
@@ -50,6 +51,7 @@ exports.updateProfile = async (req, res) => {
     if (contact && typeof contact === 'object')      updateData.contact  = contact;
     if (pricing && Array.isArray(pricing))      updateData.pricing  = pricing;
     if (timeline && Array.isArray(timeline))     updateData.timeline = timeline;
+    if (achievements && Array.isArray(achievements)) updateData.achievements = achievements;
 
     const updatedProfile = await Profile.findOneAndUpdate(
       {},
