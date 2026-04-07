@@ -2,7 +2,7 @@
 // backend/controllers/authController.js
 // ============================================================
 // Auth uses ONLY .env credentials (ADMIN_EMAIL & ADMIN_PASSWORD).
-// No hardcoded fallbacks — if env vars are missing, login fails.
+// If env vars are missing, login is rejected — no bypass.
 // ============================================================
 
 const jwt = require('jsonwebtoken');
@@ -26,14 +26,11 @@ const loginUser = async (req, res) => {
     const adminEmail    = process.env.ADMIN_EMAIL;
     const adminPassword = process.env.ADMIN_PASSWORD;
 
+    // If env vars are not configured, reject login entirely
     if (!adminEmail || !adminPassword) {
-      // Auth bypassed, accept any dummy login if these aren't set
-      return res.json({
-        _id:     'admin',
-        name:    'Admin',
-        email:   'admin@portfolio.com',
-        isAdmin: true,
-        token:   generateToken(),
+      console.error('[authController] ADMIN_EMAIL or ADMIN_PASSWORD not set in .env');
+      return res.status(500).json({
+        message: 'Server misconfigured — admin credentials not set in environment variables.',
       });
     }
 
@@ -56,7 +53,7 @@ const loginUser = async (req, res) => {
 
 // @desc    Verify stored token is still valid
 // @route   GET /api/auth/verify
-// @access  Private (requires valid JWT)
+// @access  Private (requires valid JWT — checked by protectAdmin middleware)
 const verifyToken = async (req, res) => {
   res.json({
     _id:     'admin',
@@ -67,7 +64,7 @@ const verifyToken = async (req, res) => {
   });
 };
 
-// @desc    Setup endpoint (kept for backwards compat, now no-op)
+// @desc    Setup endpoint (no-op — credentials are managed via .env)
 // @route   POST /api/auth/setup
 // @access  Public
 const setupAdmin = async (req, res) => {

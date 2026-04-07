@@ -1,8 +1,7 @@
 // ============================================================
 // backend/server.js
 // ============================================================
-// UPDATED: Added /api/tools and /api/footer routes.
-//          Configured CORS to support credentials (cookies).
+// CORS supports multiple origins (local dev + production).
 // ============================================================
 
 const express  = require('express');
@@ -12,9 +11,24 @@ require('dotenv').config();
 
 const app = express();
 
+// ── Allowed Origins ─────────────────────────────────────────
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.CLIENT_URL,
+].filter(Boolean); // remove undefined/empty values
+
 // ── Middleware ────────────────────────────────────────────────
 app.use(cors({
-  origin: process.env.CLIENT_URL,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.warn(`[CORS] Blocked request from origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
 }));
 app.use(express.json());
@@ -36,7 +50,7 @@ app.use('/api/services',     require('./routes/serviceRoutes'));
 app.use('/api/contact',      require('./routes/contactRoutes'));
 app.use('/api/tools',        require('./routes/Toolroutes'));      // Tools CRUD
 app.use('/api/footer',       require('./routes/Footerroutes'));    // Footer CRUD
-app.use('/api/marquee',      require('./routes/marqueeRoutes'));   // NEW — editable strip
+app.use('/api/marquee',      require('./routes/marqueeRoutes'));   // Marquee strip
 
 // ── Static Files ─────────────────────────────────────────────
 app.use('/uploads', express.static('uploads'));
